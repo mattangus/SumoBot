@@ -11,9 +11,10 @@
 
 task main()
 {
+	setup();
 	//wait1Msec(200); //wait 5 seconds
-	float ratio = startState();
-	mainloop(ratio);
+	//float radius = startState();
+	//mainloop(ratio);
 	//
 	//trunState();
 	//runState();
@@ -47,7 +48,7 @@ void mainloop(float startRatio)
 			currentRatio = 1;
 		moveRatio(currentRatio);
 		pastRatio = currentRatio;
-		displayInfo(currentRatio);
+		displayInfo();
 	}
 }
 
@@ -63,21 +64,13 @@ void moveRatio(float ratio)
 float startState()
 {
 	bool finished = false;
-	float ratio = 0;
+	float radius = SensorValue[DistanceSensor]/2.0;
 
 	while(!finished)
 	{
-		moveRatio(ratio);
-		if (getCurrentColour() == black)
-		{
-			finished = true;
-		}
-		ratio -= 0.001;
-		if(ratio < -0.8)
-			ratio = -0.8;
-		displayInfo(ratio);
+		displayInfo();
 	}
-	return ratio;
+	return radius;
 }
 void turnState()
 {
@@ -96,6 +89,36 @@ void move(int leftVal, int rightVal)
 	motor[Right]=rightVal;
 }
 
+void rotateAndTrack(float degrees, int speed)
+{
+
+}
+
+void rotate(float degrees, int speed)
+{
+	nMotorEncoder[Left] = 0;
+	move(speed,-speed); //positive => clockwise
+
+	float targetDist = halfRoboWidthCm*degrees*PI/180;
+
+	while(getMotorDistance(Left) < targetDist)
+		displayInfo(getMotorDistance(Left));
+
+
+	move(0,0);
+}
+
+void resetMotor(int motorNum)
+{
+	nMotorEncoder[motorNum] = 0;
+}
+
+float getMotorDistance(int motorNum)
+{
+	float curVal = nMotorEncoder[motorNum];
+	return (curVal * wheelCerc)/360.0;
+}
+
 colour getCurrentColour()
 {
 	if(SensorValue[LightSensor] > whiteThreshold)
@@ -105,10 +128,21 @@ colour getCurrentColour()
 	return black;
 }
 
-void displayInfo(float ratio)
+void setup()
+{
+}
+
+void displayInfo()
 {
 	nxtDisplayCenteredTextLine(0,"LMo %d",motor[Left]);
 	nxtDisplayCenteredTextLine(1,"RMo %d",motor[Right]);
 	nxtDisplayCenteredTextLine(2,"Sens %d",SensorValue[LightSensor]);
-	nxtDisplayCenteredTextLine(3,"turn %f",ratio);
+	nxtDisplayCenteredTextLine(3,"LEn %d",nMotorEncoder[Left]);
+	nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
+}
+
+void displayInfo(float custom)
+{
+	displayInfo();
+	nxtDisplayCenteredTextLine(5,"custom %f",custom);
 }
