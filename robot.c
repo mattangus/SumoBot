@@ -1,6 +1,7 @@
 #pragma config(Sensor, S1,     LightSensor,    sensorLightActive)
-#pragma config(Sensor, S2,     BumpSensor,     sensorTouch)
-#pragma config(Sensor, S3,     DistanceSensor, sensorSONAR)
+#pragma config(Sensor, S2,     LeftBumpSensor, sensorTouch)
+#pragma config(Sensor, S3,     RightBumpSensor, sensorTouch)
+#pragma config(Sensor, S4,     DistanceSensor, sensorSONAR)
 #pragma config(Motor,  motorA,          Middle,        tmotorNXT, PIDControl, encoder)
 #pragma config(Motor,  motorB,          Right,         tmotorNXT, PIDControl, encoder)
 #pragma config(Motor,  motorC,          Left,          tmotorNXT, PIDControl, encoder)
@@ -12,6 +13,7 @@
 task main()
 {
 	setup();
+	mainloop();
 	//wait1Msec(200); //wait 5 seconds
 	//float radius = startState();
 	//mainloop(ratio);
@@ -20,45 +22,15 @@ task main()
 	//runState();
 }
 
-void mainloop(float startRatio)
+void mainloop()
 {
-	float pastRatio = startRatio;
-	const float changeValue = 0.0001;
-	const float otherChange = 0.00005;
-	float actualChange;
+	initialState();
 	bool finished = false;
 	while(!finished) {
-		colour c = getCurrentColour();
-		int dir = 0;
-		if(c == white)
-		{
-			dir = 1;
-			actualChange = otherChange;
-		}
-		else if(c == off)
-		{
-			dir = -1;
-			actualChange = changeValue;
-		}
-
-		float currentRatio = pastRatio + (changeValue*dir);
-		if(currentRatio < -1)
-			currentRatio = -1;
-		if(currentRatio > 1)
-			currentRatio = 1;
-		moveRatio(currentRatio);
-		pastRatio = currentRatio;
-		displayInfo();
+		turnState();
+		attackState();
+		//displayInfo();
 	}
-}
-
-void moveRatio(float ratio)
-{
-	int base = -10;
-	int change = 5;
-	int left = base - (ratio*change);
-	int right = base + (ratio*change);
-	move(left,right);
 }
 
 float startState()
@@ -74,10 +46,45 @@ float startState()
 }
 void turnState()
 {
-	nMotorEncoder[Left]=0;
-	nMotorEncoder[Right]=0;
-
-	//while
+	while(SensorValue[DistanceSensor] > distanceThreshold)
+	{
+		checkEdge();
+		checkBack();
+		rotate(halfRoboWidthCm*2,25,-1);
+	}
+	move(50,50);
+}
+void attackState()
+{
+	move(30,50);//rotate slightly back
+	sleep(10);
+	
+	while(SensorValue[DistanceSensor] < distanceThreshold && SensorValue[DistanceSensor] > 255)  {
+		checkEdge();
+		checkBack(); 
+		move(50,50);
+	}
+}
+void checkBack() {
+	if (SensorValue[LeftBumpSensor] == 1) 
+	{
+		rotate(halfRoboWidthCm*2,25,1);
+		sleep(1000);
+	}
+	else if (SensorValue[RightBumpSensor] == 1){
+			rotate(halfRoboWidthCm*2,25,-1);
+			sleep(1000);
+	}
+	else
+		return;
+}
+void checkEdge() {
+	displaySensorValues(1, LightSensor);
+	if (SensorValue[LightSensor] > whiteThreshold) {
+		move(-20,-20);
+		sleep(1000); 
+	}
+	displaySensorValues(1, LightSensor);
 }
 void runState()
 {
@@ -85,27 +92,43 @@ void runState()
 
 void move(int leftVal, int rightVal)
 {
-	motor[Left]=leftVal;
-	motor[Right]=rightVal;
+	setMotor(Left,leftVal*-1);
+	setMotor(Right,rightVal*-1);
 }
 
-void rotateAndTrack(float degrees, int speed)
+void rotateAndTrack(float radius, int speed, int direction)
 {
-
+	
 }
 
-void rotate(float degrees, int speed)
+void rotate(float radius, int speed, int direction)
 {
-	nMotorEncoder[Left] = 0;
-	move(speed,-speed); //positive => clockwise
-
-	float targetDist = halfRoboWidthCm*degrees*PI/180;
-
-	while(getMotorDistance(Left) < targetDist)
-		displayInfo(getMotorDistance(Left));
-
-
-	move(0,0);
+	
+	int virtualRightV;
+	int virtualLeftV;
+	
+	float tempRatio;
+	if(radius-halfRoboWidthCm==0)
+	{
+		tempRatio = 0;
+		virtualRightV = speed;
+		virtualLeftV = 0;
+	}
+	else
+	{
+		tempRatio = (radius+halfRoboWidthCm)/(radius-halfRoboWidthCm);
+		virtualRightV = speed/tempRatio;
+		virtualLeftV = speed;
+	}
+	//rotate right (clockwise)
+	if(direction > 0)
+	{
+		move(virtualLeftV,virtualRightV);
+	}//counter clockwise
+	else
+	{
+		move(virtualRightV,virtualLeftV);
+	}
 }
 
 void resetMotor(int motorNum)
@@ -130,19 +153,72 @@ colour getCurrentColour()
 
 void setup()
 {
+	
 }
 
 void displayInfo()
 {
-	nxtDisplayCenteredTextLine(0,"LMo %d",motor[Left]);
-	nxtDisplayCenteredTextLine(1,"RMo %d",motor[Right]);
-	nxtDisplayCenteredTextLine(2,"Sens %d",SensorValue[LightSensor]);
-	nxtDisplayCenteredTextLine(3,"LEn %d",nMotorEncoder[Left]);
-	nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
+	//nxtDisplayCenteredTextLine(lineNum++,"LMot %d",motor[Left]);
+	//nxtDisplayCenteredTextLine(lineNum++,"RMot %d",motor[Left]);
+	displaySensorValues(lineNum++, LightSensor);
+	//displaySensorValues(lineNum++, DistanceSensor);
+	//nxtDisplayCenteredTextLine(lineNum++,"LEn %d",nMotorEncoder[Left]);
+	//nxtDisplayCenteredTextLine(lineNum++,"REn %d",nMotorEncoder[Right]);
+	lineNum = 0;
 }
 
 void displayInfo(float custom)
 {
 	displayInfo();
-	nxtDisplayCenteredTextLine(5,"custom %f",custom);
+	nxtDisplayCenteredTextLine(lineNum++,"custom %f",custom);
+}
+
+
+bool RightHit = false;
+bool DistanceOut = false;
+
+void initialState() {
+	rotateRight(20);
+	nMotorEncoder[Left] = 0;
+	nMotorEncoder[Right] = 0;
+	int distanceOut = 360;
+	bool running = true;
+	while(true){
+				moveBackwards();
+		if (SensorValue[RightBumpSensor] == 1)  {
+			RightHit = true;
+			break;
+		}
+		if (nMotorEncoder[Left] > distanceOut) {
+			DistanceOut = true;
+			break;
+		}
+	}
+}
+
+
+void moveBackwards() {
+	int speed = 25;
+	motor[Left] = speed;
+	motor[Right] = speed;
+
+}
+void rotateRight(int degrees) {
+	int enc = degrees;
+	while(abs(nMotorEncoder[Right])<enc) {
+		motor[Right] = 50;
+			nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
+
+
+	}
+	motor[Right] = 0;
+}
+
+
+void rotateLeft(int degrees) {
+	int enc = degrees;
+	while(abs(nMotorEncoder[Left])<enc) {
+		motor[Left] = 50;
+	}
+	motor[Left] = 0;
 }
