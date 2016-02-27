@@ -13,8 +13,8 @@
 task main()
 {
 	setup();
+	//wait1Msec(5000); //wait 5 seconds
 	mainloop();
-	//wait1Msec(200); //wait 5 seconds
 	//float radius = startState();
 	//mainloop(ratio);
 	//
@@ -24,12 +24,14 @@ task main()
 
 void mainloop()
 {
-	initialState();
+//	initialState();
 	bool finished = false;
 	while(!finished) {
-		turnState();
+		int dist = turnState(dirLeft);
+		counterTurnState(dist, dirRight);
 		attackState();
 		//displayInfo();
+		finished = true;
 	}
 }
 
@@ -44,36 +46,67 @@ float startState()
 	}
 	return radius;
 }
-void turnState()
+
+int turnState(direction dir)
 {
-	while(SensorValue[DistanceSensor] > distanceThreshold)
+	int dist = SensorValue[DistanceSensor];
+
+	while(dist > distanceThreshold )
 	{
 		checkEdge();
 		checkBack();
-		rotate(halfRoboWidthCm*2,25,-1);
+		rotate(halfRoboWidthCm*2,20,dir);
+		dist = SensorValue[DistanceSensor];
+		nxtDisplayCenteredTextLine(0,"dist %d",dist);
+		//nxtDisplayCenteredTextLine(0,"turnstate");
+		//displayInfo();
 	}
-	move(50,50);
+	//move(50,50);
+	return dist;
 }
+
+void counterTurnState(int distance, direction dir)
+{
+	//rotate(distance,10,dir);
+	int dist = SensorValue[DistanceSensor];
+	int endTime = time10[T1]+100;
+	while(dist > distanceThreshold && endTime > time10[T1])
+	{
+		checkEdge();
+		checkBack();
+		rotate(distance,20,dir);
+		dist = SensorValue[DistanceSensor];
+		//nxtDisplayCenteredTextLine(0,"counterturnstate");
+		nxtDisplayCenteredTextLine(0,"dist %d",dist);
+		//displayInfo();
+	}
+}
+
 void attackState()
 {
-	move(30,50);//rotate slightly back
-	sleep(10);
-	
-	while(SensorValue[DistanceSensor] < distanceThreshold && SensorValue[DistanceSensor] > 255)  {
-		checkEdge();
-		checkBack(); 
-		move(50,50);
+	int offCounter = 0;
+	int pos = 0;
+	while(offCounter < 1000)  {
+		if(SensorValue[DistanceSensor] >= distanceThreshold && SensorValue[DistanceSensor] <= 255)
+			offCounter++;
+		else
+			offCounter=0;
+		nxtDisplayCenteredTextLine(0,"dist %d",SensorValue[DistanceSensor]);
+		nxtDisplayCenteredTextLine(1,"offCount %d",offCounter);
+		//checkEdge();
+		//checkBack();
+		move(40,40);
 	}
 }
 void checkBack() {
-	if (SensorValue[LeftBumpSensor] == 1) 
+	if (SensorValue[LeftBumpSensor] == 1)
 	{
-		rotate(halfRoboWidthCm*2,25,1);
+		rotate(halfRoboWidthCm*2,10,1);
 		sleep(1000);
 	}
 	else if (SensorValue[RightBumpSensor] == 1){
-			rotate(halfRoboWidthCm*2,25,-1);
-			sleep(1000);
+		rotate(halfRoboWidthCm*2,10,-1);
+		sleep(1000);
 	}
 	else
 		return;
@@ -82,9 +115,9 @@ void checkEdge() {
 	displaySensorValues(1, LightSensor);
 	if (SensorValue[LightSensor] > whiteThreshold) {
 		move(-20,-20);
-		sleep(1000); 
+		sleep(1000);
 	}
-	displaySensorValues(1, LightSensor);
+	//+displaySensorValues(1, LightSensor);
 }
 void runState()
 {
@@ -98,15 +131,15 @@ void move(int leftVal, int rightVal)
 
 void rotateAndTrack(float radius, int speed, int direction)
 {
-	
+
 }
 
-void rotate(float radius, int speed, int direction)
+void rotate(float radius, int speed, direction dir)
 {
-	
+	//virtual because they don't actually correspond to left/right
 	int virtualRightV;
 	int virtualLeftV;
-	
+
 	float tempRatio;
 	if(radius-halfRoboWidthCm==0)
 	{
@@ -121,13 +154,13 @@ void rotate(float radius, int speed, int direction)
 		virtualLeftV = speed;
 	}
 	//rotate right (clockwise)
-	if(direction > 0)
+	if(dir == dirRight)
 	{
-		move(virtualLeftV,virtualRightV);
+		move(virtualRightV,virtualLeftV);
 	}//counter clockwise
 	else
 	{
-		move(virtualRightV,virtualLeftV);
+		move(virtualLeftV,virtualRightV);
 	}
 }
 
@@ -153,17 +186,17 @@ colour getCurrentColour()
 
 void setup()
 {
-	
+
 }
 
 void displayInfo()
 {
-	//nxtDisplayCenteredTextLine(lineNum++,"LMot %d",motor[Left]);
-	//nxtDisplayCenteredTextLine(lineNum++,"RMot %d",motor[Left]);
+	nxtDisplayCenteredTextLine(lineNum++,"LMot %d",motor[Left]);
+	nxtDisplayCenteredTextLine(lineNum++,"RMot %d",motor[Left]);
 	displaySensorValues(lineNum++, LightSensor);
-	//displaySensorValues(lineNum++, DistanceSensor);
-	//nxtDisplayCenteredTextLine(lineNum++,"LEn %d",nMotorEncoder[Left]);
-	//nxtDisplayCenteredTextLine(lineNum++,"REn %d",nMotorEncoder[Right]);
+	displaySensorValues(lineNum++, DistanceSensor);
+	nxtDisplayCenteredTextLine(lineNum++,"LEn %d",nMotorEncoder[Left]);
+	nxtDisplayCenteredTextLine(lineNum++,"REn %d",nMotorEncoder[Right]);
 	lineNum = 0;
 }
 
@@ -178,13 +211,13 @@ bool RightHit = false;
 bool DistanceOut = false;
 
 void initialState() {
-	rotateRight(20);
+	rotateRight(45);
 	nMotorEncoder[Left] = 0;
 	nMotorEncoder[Right] = 0;
 	int distanceOut = 360;
 	bool running = true;
 	while(true){
-				moveBackwards();
+		moveBackwards();
 		if (SensorValue[RightBumpSensor] == 1)  {
 			RightHit = true;
 			break;
@@ -198,27 +231,28 @@ void initialState() {
 
 
 void moveBackwards() {
-	int speed = 25;
+	int speed = 60;
 	motor[Left] = speed;
 	motor[Right] = speed;
 
 }
 void rotateRight(int degrees) {
 	int enc = degrees;
+	nMotorEncoder[Right]= 0;
 	while(abs(nMotorEncoder[Right])<enc) {
-		motor[Right] = 50;
-			nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
+		move(-50,50);
+		nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
 
 
 	}
-	motor[Right] = 0;
+	move(0,0);
 }
-
 
 void rotateLeft(int degrees) {
 	int enc = degrees;
+	nMotorEncoder[Left] = 0;
 	while(abs(nMotorEncoder[Left])<enc) {
-		motor[Left] = 50;
+		move(50,-50);
 	}
-	motor[Left] = 0;
+	move(0,0);
 }
