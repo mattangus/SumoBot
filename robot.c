@@ -26,12 +26,30 @@ void mainloop()
 {
 //	initialState();
 	bool finished = false;
+	bool cancel = false;
 	while(!finished) {
-		int dist = turnState(dirLeft);
-		counterTurnState(dist, dirRight);
-		attackState();
+		int dist = turnState(dirLeft,&cancel);
+		if(cancel)
+		{
+			cancel = false;
+			continue;
+		}
+
+		counterTurnState(dist, dirRight,&cancel);
+		if(cancel)
+		{
+			cancel = false;
+			continue;
+		}
+		attackState(&cancel);
+
+		if(cancel)
+		{
+			cancel = false;
+			continue;
+		}
 		//displayInfo();
-		finished = true;
+		//finished = true;
 	}
 }
 
@@ -47,15 +65,18 @@ float startState()
 	return radius;
 }
 
-int turnState(direction dir)
+int turnState(direction dir, bool* cancel)
 {
 	int dist = SensorValue[DistanceSensor];
 
 	while(dist > distanceThreshold )
 	{
-		checkEdge();
-		checkBack();
-		rotate(halfRoboWidthCm*2,20,dir);
+		if(checkEdge()||checkBack())
+		{
+			(*cancel) = true;
+			return 0;
+		}
+		rotate(halfRoboWidthCm*2,turnSpeed ,dir);
 		dist = SensorValue[DistanceSensor];
 		nxtDisplayCenteredTextLine(0,"dist %d",dist);
 		//nxtDisplayCenteredTextLine(0,"turnstate");
@@ -65,16 +86,19 @@ int turnState(direction dir)
 	return dist;
 }
 
-void counterTurnState(int distance, direction dir)
+void counterTurnState(int distance, direction dir, bool* cancel)
 {
 	//rotate(distance,10,dir);
 	int dist = SensorValue[DistanceSensor];
 	int endTime = time10[T1]+100;
 	while(dist > distanceThreshold && endTime > time10[T1])
 	{
-		checkEdge();
-		checkBack();
-		rotate(distance,20,dir);
+		if(checkEdge()||checkBack())
+		{
+			(*cancel) = true;
+			return;
+		}
+		rotate(distance,turnSpeed,dir);
 		dist = SensorValue[DistanceSensor];
 		//nxtDisplayCenteredTextLine(0,"counterturnstate");
 		nxtDisplayCenteredTextLine(0,"dist %d",dist);
@@ -82,7 +106,7 @@ void counterTurnState(int distance, direction dir)
 	}
 }
 
-void attackState()
+void attackState(bool* cancel)
 {
 	int offCounter = 0;
 	int pos = 0;
@@ -93,31 +117,37 @@ void attackState()
 			offCounter=0;
 		nxtDisplayCenteredTextLine(0,"dist %d",SensorValue[DistanceSensor]);
 		nxtDisplayCenteredTextLine(1,"offCount %d",offCounter);
-		//checkEdge();
-		//checkBack();
-		move(40,40);
+		if(checkEdge()||checkBack())
+		{
+			(*cancel) = true;
+			return;
+		}
+		move(attackSpeed,attackSpeed);
 	}
 }
-void checkBack() {
+bool checkBack() {
 	if (SensorValue[LeftBumpSensor] == 1)
 	{
-		rotate(halfRoboWidthCm*2,10,1);
-		sleep(1000);
+		rotate(halfRoboWidthCm*2,turnSpeed,dirRight);
+		wait1Msec(1000);
+		return true;
 	}
 	else if (SensorValue[RightBumpSensor] == 1){
-		rotate(halfRoboWidthCm*2,10,-1);
-		sleep(1000);
+		rotate(halfRoboWidthCm*2,turnSpeed,dirLeft);
+		wait1Msec(1000);
+		return true;
 	}
 	else
-		return;
+		return false;
 }
-void checkEdge() {
+bool checkEdge() {
 	displaySensorValues(1, LightSensor);
-	if (SensorValue[LightSensor] > whiteThreshold) {
-		move(-20,-20);
-		sleep(1000);
+	if (getCurrentColour() == white) {
+		move(-backSpeed,-backSpeed);
+		wait1Msec(1000);
+		return true;
 	}
-	//+displaySensorValues(1, LightSensor);
+	return false;
 }
 void runState()
 {
@@ -179,8 +209,6 @@ colour getCurrentColour()
 {
 	if(SensorValue[LightSensor] > whiteThreshold)
 		return white;
-	else if(SensorValue[LightSensor] < offThreshold)
-		return off;
 	return black;
 }
 

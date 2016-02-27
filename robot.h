@@ -1,8 +1,7 @@
 typedef enum colour
 {
 	black,
-	white,
-	off
+	white
 } colour;
 
 typedef enum direction
@@ -13,19 +12,21 @@ typedef enum direction
 
 /**********Constant***********/
 static const int whiteThreshold = 50;//greater than this is white
-static const int offThreshold = 25; //less than this is off the table
 static const float halfRoboWidthCm = 11.5/2.0;
 static const float wheelRadius = 8.16;
 static const float wheelCerc = 2.0*wheelRadius*PI;
 static const int distanceThreshold =150;
+static const int turnSpeed = 35;
+static const int attackSpeed = 50;
+static const int backSpeed = 20;
 
 void mainloop();
 
 /**********States**********/
 float startState();
-int turnState(direction dir);
-void counterTurnState(int distance, direction dir);
-void attackState();
+int turnState(direction dir,bool* cancel);
+void counterTurnState(int distance, direction dir,bool* cancel);
+void attackState(bool* cancel);
 void runState();
 void initialState();
 
@@ -37,8 +38,8 @@ void moveRatio(float ratio);
 void moveBackwards();
 void rotateRight(int degrees);
 void rotateLeft(int degrees);
-void checkEdge();
-void checkBack();
+bool checkEdge();
+bool checkBack();
 void move(int leftVal, int rightVal);
 void setup();
 colour getCurrentColour();
