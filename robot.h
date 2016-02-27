@@ -11,12 +11,12 @@ typedef enum direction
 } direction;
 
 /**********Constant***********/
-static const int whiteThreshold = 50;//greater than this is white
+static const int whiteThreshold = 55;//greater than this is white
 static const float halfRoboWidthCm = 11.5/2.0;
 static const float wheelRadius = 8.16;
 static const float wheelCerc = 2.0*wheelRadius*PI;
 static const int distanceThreshold =150;
-static const int turnSpeed = 35;
+static const int turnSpeed = 45;
 static const int attackSpeed = 50;
 static const int backSpeed = 20;
 

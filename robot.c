@@ -13,7 +13,8 @@
 task main()
 {
 	setup();
-	//wait1Msec(5000); //wait 5 seconds
+	wait1Msec(5000); //wait 5 seconds
+
 	mainloop();
 	//float radius = startState();
 	//mainloop(ratio);
@@ -24,7 +25,7 @@ task main()
 
 void mainloop()
 {
-//	initialState();
+	initialState();
 	bool finished = false;
 	bool cancel = false;
 	while(!finished) {
@@ -78,7 +79,7 @@ int turnState(direction dir, bool* cancel)
 		}
 		rotate(halfRoboWidthCm*2,turnSpeed ,dir);
 		dist = SensorValue[DistanceSensor];
-		nxtDisplayCenteredTextLine(0,"dist %d",dist);
+		//nxtDisplayCenteredTextLine(0,"dist %d",dist);
 		//nxtDisplayCenteredTextLine(0,"turnstate");
 		//displayInfo();
 	}
@@ -101,7 +102,7 @@ void counterTurnState(int distance, direction dir, bool* cancel)
 		rotate(distance,turnSpeed,dir);
 		dist = SensorValue[DistanceSensor];
 		//nxtDisplayCenteredTextLine(0,"counterturnstate");
-		nxtDisplayCenteredTextLine(0,"dist %d",dist);
+	//	nxtDisplayCenteredTextLine(0,"dist %d",dist);
 		//displayInfo();
 	}
 }
@@ -115,8 +116,8 @@ void attackState(bool* cancel)
 			offCounter++;
 		else
 			offCounter=0;
-		nxtDisplayCenteredTextLine(0,"dist %d",SensorValue[DistanceSensor]);
-		nxtDisplayCenteredTextLine(1,"offCount %d",offCounter);
+		//nxtDisplayCenteredTextLine(0,"dist %d",SensorValue[DistanceSensor]);
+		//nxtDisplayCenteredTextLine(1,"offCount %d",offCounter);
 		if(checkEdge()||checkBack())
 		{
 			(*cancel) = true;
@@ -141,7 +142,7 @@ bool checkBack() {
 		return false;
 }
 bool checkEdge() {
-	displaySensorValues(1, LightSensor);
+	//displaySensorValues(1, LightSensor);
 	if (getCurrentColour() == white) {
 		move(-backSpeed,-backSpeed);
 		wait1Msec(1000);
@@ -155,8 +156,8 @@ void runState()
 
 void move(int leftVal, int rightVal)
 {
-	setMotor(Left,leftVal*-1);
-	setMotor(Right,rightVal*-1);
+	motor[Left] = leftVal*-1;
+	motor[Right] = rightVal*-1;
 }
 
 void rotateAndTrack(float radius, int speed, int direction)
@@ -221,8 +222,8 @@ void displayInfo()
 {
 	nxtDisplayCenteredTextLine(lineNum++,"LMot %d",motor[Left]);
 	nxtDisplayCenteredTextLine(lineNum++,"RMot %d",motor[Left]);
-	displaySensorValues(lineNum++, LightSensor);
-	displaySensorValues(lineNum++, DistanceSensor);
+//	displaySensorValues(lineNum++, LightSensor);
+	//displaySensorValues(lineNum++, DistanceSensor);
 	nxtDisplayCenteredTextLine(lineNum++,"LEn %d",nMotorEncoder[Left]);
 	nxtDisplayCenteredTextLine(lineNum++,"REn %d",nMotorEncoder[Right]);
 	lineNum = 0;
@@ -231,7 +232,7 @@ void displayInfo()
 void displayInfo(float custom)
 {
 	displayInfo();
-	nxtDisplayCenteredTextLine(lineNum++,"custom %f",custom);
+	//nxtDisplayCenteredTextLine(lineNum++,"custom %f",custom);
 }
 
 
@@ -239,18 +240,23 @@ bool RightHit = false;
 bool DistanceOut = false;
 
 void initialState() {
-	rotateRight(45);
+	//rotateRight(45);
 	nMotorEncoder[Left] = 0;
 	nMotorEncoder[Right] = 0;
-	int distanceOut = 360;
+	int distanceOut = 50;
 	bool running = true;
 	while(true){
-		moveBackwards();
+		//moveBackwards();
+		move(100,100);
+		if (checkEdge() || checkBack())
+			return;
+
 		if (SensorValue[RightBumpSensor] == 1)  {
 			RightHit = true;
 			break;
 		}
-		if (nMotorEncoder[Left] > distanceOut) {
+		int dist = nMotorEncoder[Left]
+		if (abs(dist) > distanceOut) {
 			DistanceOut = true;
 			break;
 		}
@@ -268,8 +274,8 @@ void rotateRight(int degrees) {
 	int enc = degrees;
 	nMotorEncoder[Right]= 0;
 	while(abs(nMotorEncoder[Right])<enc) {
-		move(-50,50);
-		nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
+		move(-60,60);
+		//nxtDisplayCenteredTextLine(4,"REn %d",nMotorEncoder[Right]);
 
 
 	}
